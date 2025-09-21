@@ -1,20 +1,19 @@
 import React, { useEffect, useState, useMemo } from "react";
 import "./TableView.css";
 
-// Define excluded columns once at module level
 const EXCLUDED_COLUMNS = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
 
 function TableView() {
   const [allRows, setAllRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [filter, setFilter] = useState(""); // 🔑 new filter state
 
-  const pageSize = 100; // show 100 per page
+  const pageSize = 100;
 
   const FUNCTION_URL =
     "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
-  // Load ALL data by following continuation tokens
   const loadAllData = async () => {
     setLoading(true);
     let items = [];
@@ -23,7 +22,7 @@ function TableView() {
     try {
       do {
         const url = new URL(FUNCTION_URL);
-        url.searchParams.set("pageSize", 1000); // fetch in big chunks
+        url.searchParams.set("pageSize", 1000);
         if (token) url.searchParams.set("token", token);
 
         const res = await fetch(url);
@@ -48,21 +47,45 @@ function TableView() {
     loadAllData();
   }, []);
 
+  // 🔎 Filter rows across all columns
+  const filteredRows = useMemo(() => {
+    if (!filter) return allRows;
+    const lower = filter.toLowerCase();
+    return allRows.filter((row) =>
+      Object.values(row).some((val) =>
+        val !== null && val !== undefined && String(val).toLowerCase().includes(lower)
+      )
+    );
+  }, [allRows, filter]);
+
   // Pagination logic
-  const totalPages = Math.ceil(allRows.length / pageSize);
+  const totalPages = Math.ceil(filteredRows.length / pageSize);
   const pagedRows = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
-    return allRows.slice(start, start + pageSize);
-  }, [allRows, currentPage]);
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, currentPage]);
 
   return (
     <div className="table-container">
       <h2>Azure Storage Table Viewer</h2>
+
+      {/* 🔎 Filter input */}
+      <input
+        type="text"
+        placeholder="Filter across all columns..."
+        value={filter}
+        onChange={(e) => {
+          setFilter(e.target.value);
+          setCurrentPage(1); // reset to first page when filtering
+        }}
+        className="filter-input"
+      />
+
       {loading ? (
         <p>Loading all data...</p>
       ) : (
         <>
-          <DynamicTable rows={pagedRows} allRows={allRows} />
+          <DynamicTable rows={pagedRows} allRows={filteredRows} />
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -77,7 +100,6 @@ function TableView() {
 function DynamicTable({ rows, allRows }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  // Build union of all keys across ALL rows
   const columns = useMemo(() => {
     const colSet = new Set();
     allRows.forEach((row) => {
@@ -90,7 +112,6 @@ function DynamicTable({ rows, allRows }) {
     return Array.from(colSet);
   }, [allRows]);
 
-  // Sorting logic
   const sortedRows = useMemo(() => {
     if (!rows.length) return [];
     if (!sortConfig.key) return rows;
