@@ -33,19 +33,27 @@ function TableView() {
 function DynamicTable({ rows }) {
   if (!rows.length) return <p>No data yet...</p>;
 
-  const columns = Object.keys(rows[0]);
+  // Exclude unwanted system columns
+  const excluded = ["etag", "partitionKey", "rowKey", "timestamp"];
+  const columns = Object.keys(rows[0]).filter(
+    col => !excluded.includes(col.toLowerCase())
+  );
 
   return (
     <table border="1" cellPadding="5">
       <thead>
         <tr>
-          {columns.map(col => <th key={col}>{col}</th>)}
+          {columns.map(col => (
+            <th key={col}>{col}</th>
+          ))}
         </tr>
       </thead>
       <tbody>
         {rows.map((row, i) => (
           <tr key={i}>
-            {columns.map(col => <td key={col}>{row[col]}</td>)}
+            {columns.map(col => (
+              <td key={col}>{row[col]}</td>
+            ))}
           </tr>
         ))}
       </tbody>
