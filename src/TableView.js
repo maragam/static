@@ -15,58 +15,58 @@ function TableView({ token }) {   // ✅ accept Entra ID access token as prop
   const FUNCTION_URL =
     "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list";
 
-  // Load ALL data once
-  const loadAllData = async () => {
-    setLoading(true);
-    let items = [];
-    let continuationToken = null;   // ✅ renamed to avoid confusion
-
-    try {
-      do {
-        const url = new URL(FUNCTION_URL);
-        url.searchParams.set("pageSize", 1000);
-        if (continuationToken) url.searchParams.set("token", continuationToken);
-
-        const res = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${token}`,   // ✅ use Entra ID token
-          },
-        });
-
-        if (!res.ok) {
-          console.error("API error", res.status, await res.text());
-          break;
-        }
-
-        const data = await res.json();
-        items = [...items, ...data.items];
-        continuationToken = data.continuationToken;
-      } while (continuationToken);
-
-      setAllRows(items);
-
-      // Build union of all columns ONCE
-      const colSet = new Set();
-      items.forEach((row) => {
-        Object.keys(row).forEach((col) => {
-          if (!EXCLUDED_COLUMNS.has(col.toLowerCase())) {
-            colSet.add(col);
-          }
-        });
-      });
-      setColumns(Array.from(colSet));
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // ✅ Inline fetch logic inside useEffect
   useEffect(() => {
-    if (token) {
-      loadAllData();
-    }
-  }, [token]);   // ✅ reload when token changes
+    if (!token) return;
+
+    const loadAllData = async () => {
+      setLoading(true);
+      let items = [];
+      let continuationToken = null;
+
+      try {
+        do {
+          const url = new URL(FUNCTION_URL);
+          url.searchParams.set("pageSize", 1000);
+          if (continuationToken) url.searchParams.set("token", continuationToken);
+
+          const res = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${token}`,   // ✅ use Entra ID token
+            },
+          });
+
+          if (!res.ok) {
+            console.error("API error", res.status, await res.text());
+            break;
+          }
+
+          const data = await res.json();
+          items = [...items, ...data.items];
+          continuationToken = data.continuationToken;
+        } while (continuationToken);
+
+        setAllRows(items);
+
+        // Build union of all columns ONCE
+        const colSet = new Set();
+        items.forEach((row) => {
+          Object.keys(row).forEach((col) => {
+            if (!EXCLUDED_COLUMNS.has(col.toLowerCase())) {
+              colSet.add(col);
+            }
+          });
+        });
+        setColumns(Array.from(colSet));
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAllData();
+  }, [token]);   // ✅ only depends on token
 
   // Filter rows across all columns
   const filteredRows = useMemo(() => {
