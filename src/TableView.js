@@ -3,36 +3,62 @@ import "./TableView.css";
 
 function TableView() {
   const [rows, setRows] = useState([]);
-  const [token, setToken] = useState(null);
+  const [tokenMap, setTokenMap] = useState({ 1: null }); // page -> continuationToken
+  const [currentPage, setCurrentPage] = useState(1);
 
   const FUNCTION_URL =
     "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
-  const loadData = async (nextToken = null) => {
+  // Load data for a given page
+  const loadPage = async (page) => {
     const url = new URL(FUNCTION_URL);
-    url.searchParams.set("pageSize", 20);
-    if (nextToken) url.searchParams.set("token", nextToken);
+    url.searchParams.set("pageSize", 100);
+
+    // If not first page, use continuation token
+    if (page > 1 && tokenMap[page]) {
+      url.searchParams.set("token", tokenMap[page]);
+    }
 
     const res = await fetch(url);
     const data = await res.json();
 
-    setRows((prev) => [...prev, ...data.items]);
-    setToken(data.continuationToken);
+    // Store rows for this page
+    setRows(data.items);
+
+    // Save continuation token for next page
+    setTokenMap((prev) => ({
+      ...prev,
+      [page + 1]: data.continuationToken || null,
+    }));
+
+    setCurrentPage(page);
   };
 
   useEffect(() => {
-    loadData();
+    loadPage(1);
   }, []);
 
   return (
     <div className="table-container">
       <h2>Azure Storage Table Viewer</h2>
       <DynamicTable rows={rows} />
-      {token && (
-        <button className="load-btn" onClick={() => loadData(token)}>
-          Load More
+      <div className="pagination">
+        <button
+          className="nav-btn"
+          onClick={() => loadPage(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          ◀ Previous
         </button>
-      )}
+        <span className="page-info">Page {currentPage}</span>
+        <button
+          className="nav-btn"
+          onClick={() => loadPage(currentPage + 1)}
+          disabled={!tokenMap[currentPage + 1]}
+        >
+          Next ▶
+        </button>
+      </div>
     </div>
   );
 }
@@ -46,7 +72,7 @@ function DynamicTable({ rows }) {
     ? Object.keys(rows[0]).filter((col) => !excluded.has(col.toLowerCase()))
     : [];
 
-  // Always call useMemo, even if rows is empty
+  // Sorting logic
   const sortedRows = useMemo(() => {
     if (!rows.length) return [];
     if (!sortConfig.key) return rows;
