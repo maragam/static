@@ -6,7 +6,7 @@ function TableView() {
 
   // Load data from your Azure Function
   const loadData = async (nextToken = null) => {
-    const url = new URL("/api/listEntities", window.location.origin);
+    const url = new URL("/api/list", window.location.origin);
     url.searchParams.set("pageSize", 20);
     if (nextToken) url.searchParams.set("token", nextToken);
 
