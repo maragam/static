@@ -5,15 +5,17 @@ const EXCLUDED_COLUMNS = new Set(["etag", "partitionkey", "rowkey", "timestamp"]
 
 function TableView() {
   const [allRows, setAllRows] = useState([]);
+  const [columns, setColumns] = useState([]); // 🔑 fixed column order
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filter, setFilter] = useState(""); // 🔑 new filter state
+  const [filter, setFilter] = useState("");
 
   const pageSize = 100;
 
   const FUNCTION_URL =
     "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
+  // Load ALL data once
   const loadAllData = async () => {
     setLoading(true);
     let items = [];
@@ -36,6 +38,17 @@ function TableView() {
       } while (token);
 
       setAllRows(items);
+
+      // 🔑 Build union of all columns ONCE
+      const colSet = new Set();
+      items.forEach((row) => {
+        Object.keys(row).forEach((col) => {
+          if (!EXCLUDED_COLUMNS.has(col.toLowerCase())) {
+            colSet.add(col);
+          }
+        });
+      });
+      setColumns(Array.from(colSet));
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
@@ -52,8 +65,11 @@ function TableView() {
     if (!filter) return allRows;
     const lower = filter.toLowerCase();
     return allRows.filter((row) =>
-      Object.values(row).some((val) =>
-        val !== null && val !== undefined && String(val).toLowerCase().includes(lower)
+      Object.values(row).some(
+        (val) =>
+          val !== null &&
+          val !== undefined &&
+          String(val).toLowerCase().includes(lower)
       )
     );
   }, [allRows, filter]);
@@ -69,14 +85,14 @@ function TableView() {
     <div className="table-container">
       <h2>Azure Storage Table Viewer</h2>
 
-      {/* 🔎 Filter input */}
+      {/* 🔎 Global filter */}
       <input
         type="text"
         placeholder="Filter across all columns..."
         value={filter}
         onChange={(e) => {
           setFilter(e.target.value);
-          setCurrentPage(1); // reset to first page when filtering
+          setCurrentPage(1);
         }}
         className="filter-input"
       />
@@ -85,7 +101,7 @@ function TableView() {
         <p>Loading all data...</p>
       ) : (
         <>
-          <DynamicTable rows={pagedRows} allRows={filteredRows} />
+          <DynamicTable rows={pagedRows} columns={columns} />
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -97,20 +113,8 @@ function TableView() {
   );
 }
 
-function DynamicTable({ rows, allRows }) {
+function DynamicTable({ rows, columns }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-
-  const columns = useMemo(() => {
-    const colSet = new Set();
-    allRows.forEach((row) => {
-      Object.keys(row).forEach((col) => {
-        if (!EXCLUDED_COLUMNS.has(col.toLowerCase())) {
-          colSet.add(col);
-        }
-      });
-    });
-    return Array.from(colSet);
-  }, [allRows]);
 
   const sortedRows = useMemo(() => {
     if (!rows.length) return [];
@@ -157,7 +161,8 @@ function DynamicTable({ rows, allRows }) {
               style={{ cursor: "pointer" }}
             >
               {col.replace(/([a-z])([A-Z])/g, "$1 $2")}
-              {sortConfig.key === col && (sortConfig.direction === "asc" ? " ▲" : " ▼")}
+              {sortConfig.key === col &&
+                (sortConfig.direction === "asc" ? " ▲" : " ▼")}
             </th>
           ))}
         </tr>
