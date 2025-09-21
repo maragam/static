@@ -140,7 +140,10 @@ function DynamicTable({ rows, allRows }) {
         {sortedRows.map((row, i) => (
           <tr key={i}>
             {columns.map((col) => (
-              <td key={col}>{row[col] ?? ""}</td> {/* empty if missing */}
+              // empty if missing
+              <td key={col}>
+                {row[col] !== undefined && row[col] !== null ? row[col] : ""}
+              </td>
             ))}
           </tr>
         ))}
