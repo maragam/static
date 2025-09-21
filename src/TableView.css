@@ -52,3 +52,13 @@ h2 {
 .load-btn:hover {
   background: #1e40af;
 }
+
+.modern-table th {
+  user-select: none;
+}
+
+.modern-table th:hover {
+  background: #1e40af;
+  color: #fff;
+  transition: background 0.2s ease-in-out;
+}

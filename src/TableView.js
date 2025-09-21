@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "./TableView.css"; // <-- add this import for styling
+import "./TableView.css"; // keep your modern styling
 
 function TableView() {
   const [rows, setRows] = useState([]);
@@ -39,6 +39,8 @@ function TableView() {
 }
 
 function DynamicTable({ rows }) {
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
   if (!rows.length) return <p>No data yet...</p>;
 
   // Exclude unwanted system columns (case-insensitive)
@@ -47,19 +49,56 @@ function DynamicTable({ rows }) {
     (col) => !excluded.has(col.toLowerCase())
   );
 
+  // Sorting logic
+  const sortedRows = React.useMemo(() => {
+    if (!sortConfig.key) return rows;
+
+    return [...rows].sort((a, b) => {
+      const aVal = a[sortConfig.key];
+      const bVal = b[sortConfig.key];
+
+      // Handle undefined/null gracefully
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+
+      // Numeric sort if both values are numbers
+      if (!isNaN(aVal) && !isNaN(bVal)) {
+        return sortConfig.direction === "asc"
+          ? Number(aVal) - Number(bVal)
+          : Number(bVal) - Number(aVal);
+      }
+
+      // String sort otherwise
+      return sortConfig.direction === "asc"
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+  }, [rows, sortConfig]);
+
+  const handleSort = (col) => {
+    setSortConfig((prev) => {
+      if (prev.key === col) {
+        // toggle direction
+        return { key: col, direction: prev.direction === "asc" ? "desc" : "asc" };
+      }
+      return { key: col, direction: "asc" };
+    });
+  };
+
   return (
     <table className="modern-table">
       <thead>
         <tr>
           {columns.map((col) => (
-            <th key={col}>
-              {col.replace(/([a-z])([A-Z])/g, "$1 $2")} {/* Prettify headers */}
+            <th key={col} onClick={() => handleSort(col)} style={{ cursor: "pointer" }}>
+              {col.replace(/([a-z])([A-Z])/g, "$1 $2")}
+              {sortConfig.key === col && (sortConfig.direction === "asc" ? " ▲" : " ▼")}
             </th>
           ))}
         </tr>
       </thead>
       <tbody>
-        {rows.map((row, i) => (
+        {sortedRows.map((row, i) => (
           <tr key={i}>
             {columns.map((col) => (
               <td key={col}>{row[col]}</td>
