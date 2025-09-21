@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
+import "./TableView.css"; // <-- add this import for styling
 
 function TableView() {
   const [rows, setRows] = useState([]);
   const [token, setToken] = useState(null);
-  const FUNCTION_URL = "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
+
+  const FUNCTION_URL =
+    "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
   // Load data from your Azure Function
   const loadData = async (nextToken = null) => {
@@ -14,7 +17,7 @@ function TableView() {
     const res = await fetch(url);
     const data = await res.json();
 
-    setRows(prev => [...prev, ...data.items]);
+    setRows((prev) => [...prev, ...data.items]);
     setToken(data.continuationToken);
   };
 
@@ -23,9 +26,14 @@ function TableView() {
   }, []);
 
   return (
-    <div>
+    <div className="table-container">
+      <h2>Azure Storage Table Viewer</h2>
       <DynamicTable rows={rows} />
-      {token && <button onClick={() => loadData(token)}>Load More</button>}
+      {token && (
+        <button className="load-btn" onClick={() => loadData(token)}>
+          Load More
+        </button>
+      )}
     </div>
   );
 }
@@ -33,25 +41,27 @@ function TableView() {
 function DynamicTable({ rows }) {
   if (!rows.length) return <p>No data yet...</p>;
 
-  // Exclude unwanted system columns
-  const excluded = ["etag", "partitionkey", "rowkey", "timestamp"];
+  // Exclude unwanted system columns (case-insensitive)
+  const excluded = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
   const columns = Object.keys(rows[0]).filter(
-    col => !excluded.includes(col.toLowerCase())
+    (col) => !excluded.has(col.toLowerCase())
   );
 
   return (
-    <table border="1" cellPadding="5">
+    <table className="modern-table">
       <thead>
         <tr>
-          {columns.map(col => (
-            <th key={col}>{col}</th>
+          {columns.map((col) => (
+            <th key={col}>
+              {col.replace(/([a-z])([A-Z])/g, "$1 $2")} {/* Prettify headers */}
+            </th>
           ))}
         </tr>
       </thead>
       <tbody>
         {rows.map((row, i) => (
           <tr key={i}>
-            {columns.map(col => (
+            {columns.map((col) => (
               <td key={col}>{row[col]}</td>
             ))}
           </tr>
