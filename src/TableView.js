@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import "./TableView.css"; // keep your modern styling
+import React, { useEffect, useState, useMemo } from "react";
+import "./TableView.css";
 
 function TableView() {
   const [rows, setRows] = useState([]);
@@ -8,7 +8,6 @@ function TableView() {
   const FUNCTION_URL =
     "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
-  // Load data from your Azure Function
   const loadData = async (nextToken = null) => {
     const url = new URL(FUNCTION_URL);
     url.searchParams.set("pageSize", 20);
@@ -41,34 +40,30 @@ function TableView() {
 function DynamicTable({ rows }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  if (!rows.length) return <p>No data yet...</p>;
-
-  // Exclude unwanted system columns (case-insensitive)
+  // Exclude unwanted system columns
   const excluded = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
-  const columns = Object.keys(rows[0]).filter(
-    (col) => !excluded.has(col.toLowerCase())
-  );
+  const columns = rows.length
+    ? Object.keys(rows[0]).filter((col) => !excluded.has(col.toLowerCase()))
+    : [];
 
-  // Sorting logic
-  const sortedRows = React.useMemo(() => {
+  // Always call useMemo, even if rows is empty
+  const sortedRows = useMemo(() => {
+    if (!rows.length) return [];
     if (!sortConfig.key) return rows;
 
     return [...rows].sort((a, b) => {
       const aVal = a[sortConfig.key];
       const bVal = b[sortConfig.key];
 
-      // Handle undefined/null gracefully
       if (aVal == null) return 1;
       if (bVal == null) return -1;
 
-      // Numeric sort if both values are numbers
       if (!isNaN(aVal) && !isNaN(bVal)) {
         return sortConfig.direction === "asc"
           ? Number(aVal) - Number(bVal)
           : Number(bVal) - Number(aVal);
       }
 
-      // String sort otherwise
       return sortConfig.direction === "asc"
         ? String(aVal).localeCompare(String(bVal))
         : String(bVal).localeCompare(String(aVal));
@@ -78,19 +73,24 @@ function DynamicTable({ rows }) {
   const handleSort = (col) => {
     setSortConfig((prev) => {
       if (prev.key === col) {
-        // toggle direction
         return { key: col, direction: prev.direction === "asc" ? "desc" : "asc" };
       }
       return { key: col, direction: "asc" };
     });
   };
 
+  if (!rows.length) return <p>No data yet...</p>;
+
   return (
     <table className="modern-table">
       <thead>
         <tr>
           {columns.map((col) => (
-            <th key={col} onClick={() => handleSort(col)} style={{ cursor: "pointer" }}>
+            <th
+              key={col}
+              onClick={() => handleSort(col)}
+              style={{ cursor: "pointer" }}
+            >
               {col.replace(/([a-z])([A-Z])/g, "$1 $2")}
               {sortConfig.key === col && (sortConfig.direction === "asc" ? " ▲" : " ▼")}
             </th>
