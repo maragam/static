@@ -93,3 +93,9 @@ h2 {
   background: #2563eb;
   color: white;
 }
+
+mark {
+  background: #fde68a; /* soft yellow */
+  padding: 0 2px;
+  border-radius: 2px;
+}

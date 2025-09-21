@@ -5,7 +5,7 @@ const EXCLUDED_COLUMNS = new Set(["etag", "partitionkey", "rowkey", "timestamp"]
 
 function TableView() {
   const [allRows, setAllRows] = useState([]);
-  const [columns, setColumns] = useState([]); // 🔑 fixed column order
+  const [columns, setColumns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState("");
@@ -39,7 +39,7 @@ function TableView() {
 
       setAllRows(items);
 
-      // 🔑 Build union of all columns ONCE
+      // Build union of all columns ONCE
       const colSet = new Set();
       items.forEach((row) => {
         Object.keys(row).forEach((col) => {
@@ -60,7 +60,7 @@ function TableView() {
     loadAllData();
   }, []);
 
-  // 🔎 Filter rows across all columns
+  // Filter rows across all columns
   const filteredRows = useMemo(() => {
     if (!filter) return allRows;
     const lower = filter.toLowerCase();
@@ -101,7 +101,7 @@ function TableView() {
         <p>Loading all data...</p>
       ) : (
         <>
-          <DynamicTable rows={pagedRows} columns={columns} />
+          <DynamicTable rows={pagedRows} columns={columns} filter={filter} />
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -113,7 +113,36 @@ function TableView() {
   );
 }
 
-function DynamicTable({ rows, columns }) {
+// 🔑 Highlight helper
+function highlightMatch(value, filter) {
+  if (!filter || value === undefined || value === null) return value ?? "";
+
+  const str = String(value);
+  const lowerStr = str.toLowerCase();
+  const lowerFilter = filter.toLowerCase();
+
+  const parts = [];
+  let start = 0;
+  let index;
+
+  while ((index = lowerStr.indexOf(lowerFilter, start)) !== -1) {
+    if (index > start) {
+      parts.push(str.substring(start, index));
+    }
+    parts.push(
+      <mark key={index}>{str.substring(index, index + filter.length)}</mark>
+    );
+    start = index + filter.length;
+  }
+
+  if (start < str.length) {
+    parts.push(str.substring(start));
+  }
+
+  return parts;
+}
+
+function DynamicTable({ rows, columns, filter }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   const sortedRows = useMemo(() => {
@@ -172,7 +201,7 @@ function DynamicTable({ rows, columns }) {
           <tr key={i}>
             {columns.map((col) => (
               <td key={col}>
-                {row[col] !== undefined && row[col] !== null ? row[col] : ""}
+                {highlightMatch(row[col], filter)}
               </td>
             ))}
           </tr>
