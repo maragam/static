@@ -11,7 +11,7 @@ export default function AuthWrapper({ children }) {
         <button
           onClick={() =>
             instance.loginPopup({
-              scopes: ["api://<backend-client-id>/user_impersonation"],
+              scopes: ["api://db7fefa9-2bf3-4a95-b5a6-769d00f18f99/user_impersonation"],
             })
           }
         >
