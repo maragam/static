@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import "./TableView.css";
 
 function TableView() {
@@ -9,34 +9,34 @@ function TableView() {
   const FUNCTION_URL =
     "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
-  // Load data for a given page
-  const loadPage = async (page) => {
-    const url = new URL(FUNCTION_URL);
-    url.searchParams.set("pageSize", 100);
+  // Wrap loadPage in useCallback so it's stable
+  const loadPage = useCallback(
+    async (page) => {
+      const url = new URL(FUNCTION_URL);
+      url.searchParams.set("pageSize", 100);
 
-    // If not first page, use continuation token
-    if (page > 1 && tokenMap[page]) {
-      url.searchParams.set("token", tokenMap[page]);
-    }
+      if (page > 1 && tokenMap[page]) {
+        url.searchParams.set("token", tokenMap[page]);
+      }
 
-    const res = await fetch(url);
-    const data = await res.json();
+      const res = await fetch(url);
+      const data = await res.json();
 
-    // Store rows for this page
-    setRows(data.items);
+      setRows(data.items);
 
-    // Save continuation token for next page
-    setTokenMap((prev) => ({
-      ...prev,
-      [page + 1]: data.continuationToken || null,
-    }));
+      setTokenMap((prev) => ({
+        ...prev,
+        [page + 1]: data.continuationToken || null,
+      }));
 
-    setCurrentPage(page);
-  };
+      setCurrentPage(page);
+    },
+    [FUNCTION_URL, tokenMap] // dependencies
+  );
 
   useEffect(() => {
     loadPage(1);
-  }, []);
+  }, [loadPage]);
 
   return (
     <div className="table-container">
@@ -66,13 +66,11 @@ function TableView() {
 function DynamicTable({ rows }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  // Exclude unwanted system columns
   const excluded = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
   const columns = rows.length
     ? Object.keys(rows[0]).filter((col) => !excluded.has(col.toLowerCase()))
     : [];
 
-  // Sorting logic
   const sortedRows = useMemo(() => {
     if (!rows.length) return [];
     if (!sortConfig.key) return rows;
