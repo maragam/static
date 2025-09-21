@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useMemo } from "react";
 import "./TableView.css";
 
+// Define excluded columns once at module level
+const EXCLUDED_COLUMNS = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
+
 function TableView() {
   const [allRows, setAllRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,23 +20,28 @@ function TableView() {
     let items = [];
     let token = null;
 
-    do {
-      const url = new URL(FUNCTION_URL);
-      url.searchParams.set("pageSize", 1000); // fetch in big chunks
-      if (token) url.searchParams.set("token", token);
+    try {
+      do {
+        const url = new URL(FUNCTION_URL);
+        url.searchParams.set("pageSize", 1000); // fetch in big chunks
+        if (token) url.searchParams.set("token", token);
 
-      const res = await fetch(url);
-      if (!res.ok) {
-        console.error("API error", res.status, await res.text());
-        break;
-      }
-      const data = await res.json();
-      items = [...items, ...data.items];
-      token = data.continuationToken;
-    } while (token);
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error("API error", res.status, await res.text());
+          break;
+        }
+        const data = await res.json();
+        items = [...items, ...data.items];
+        token = data.continuationToken;
+      } while (token);
 
-    setAllRows(items);
-    setLoading(false);
+      setAllRows(items);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -69,15 +77,12 @@ function TableView() {
 function DynamicTable({ rows, allRows }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
-  // Exclude unwanted system columns
-  const excluded = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
-
   // Build union of all keys across ALL rows
   const columns = useMemo(() => {
     const colSet = new Set();
     allRows.forEach((row) => {
       Object.keys(row).forEach((col) => {
-        if (!excluded.has(col.toLowerCase())) {
+        if (!EXCLUDED_COLUMNS.has(col.toLowerCase())) {
           colSet.add(col);
         }
       });
@@ -140,7 +145,6 @@ function DynamicTable({ rows, allRows }) {
         {sortedRows.map((row, i) => (
           <tr key={i}>
             {columns.map((col) => (
-              // empty if missing
               <td key={col}>
                 {row[col] !== undefined && row[col] !== null ? row[col] : ""}
               </td>
