@@ -54,7 +54,7 @@ function TableView() {
         <p>Loading all data...</p>
       ) : (
         <>
-          <DynamicTable rows={pagedRows} />
+          <DynamicTable rows={pagedRows} allRows={allRows} />
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
@@ -66,14 +66,26 @@ function TableView() {
   );
 }
 
-function DynamicTable({ rows }) {
+function DynamicTable({ rows, allRows }) {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
+  // Exclude unwanted system columns
   const excluded = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
-  const columns = rows.length
-    ? Object.keys(rows[0]).filter((col) => !excluded.has(col.toLowerCase()))
-    : [];
 
+  // Build union of all keys across ALL rows
+  const columns = useMemo(() => {
+    const colSet = new Set();
+    allRows.forEach((row) => {
+      Object.keys(row).forEach((col) => {
+        if (!excluded.has(col.toLowerCase())) {
+          colSet.add(col);
+        }
+      });
+    });
+    return Array.from(colSet);
+  }, [allRows]);
+
+  // Sorting logic
   const sortedRows = useMemo(() => {
     if (!rows.length) return [];
     if (!sortConfig.key) return rows;
@@ -128,7 +140,7 @@ function DynamicTable({ rows }) {
         {sortedRows.map((row, i) => (
           <tr key={i}>
             {columns.map((col) => (
-              <td key={col}>{row[col]}</td>
+              <td key={col}>{row[col] ?? ""}</td> {/* empty if missing */}
             ))}
           </tr>
         ))}
