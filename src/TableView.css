@@ -1,21 +1,24 @@
 .table-container {
-  margin: 2rem auto;
+  margin: 1.5rem auto;
   max-width: 95%;
   font-family: system-ui, sans-serif;
+  font-size: 0.85rem; /* smaller base font */
 }
 
 h2 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   color: #1e3a8a;
   font-weight: 600;
+  font-size: 1.1rem; /* slightly smaller heading */
 }
 
 .modern-table {
   width: 100%;
   border-collapse: collapse;
-  border-radius: 8px;
+  border-radius: 6px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-size: 0.8rem; /* smaller table font */
 }
 
 .modern-table thead {
@@ -25,8 +28,9 @@ h2 {
 
 .modern-table th,
 .modern-table td {
-  padding: 12px 16px;
+  padding: 6px 10px; /* tighter padding */
   text-align: left;
+  line-height: 1.2; /* more compact line height */
 }
 
 .modern-table tbody tr:nth-child(even) {
@@ -39,14 +43,14 @@ h2 {
 }
 
 .load-btn {
-  margin-top: 1rem;
-  padding: 10px 18px;
+  margin-top: 0.75rem;
+  padding: 6px 12px; /* smaller button */
   background: #2563eb;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.8rem;
 }
 
 .load-btn:hover {
@@ -55,6 +59,7 @@ h2 {
 
 .modern-table th {
   user-select: none;
+  font-weight: 600;
 }
 
 .modern-table th:hover {
@@ -64,19 +69,20 @@ h2 {
 }
 
 .pagination {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
+  font-size: 0.8rem;
 }
 
 .page-btn {
-  padding: 6px 12px;
+  padding: 4px 8px; /* smaller buttons */
   border: 1px solid #2563eb;
   background: white;
   color: #2563eb;
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
 }
 
