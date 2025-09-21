@@ -34,7 +34,7 @@ function DynamicTable({ rows }) {
   if (!rows.length) return <p>No data yet...</p>;
 
   // Exclude unwanted system columns
-  const excluded = ["etag", "partitionKey", "rowKey", "timestamp"];
+  const excluded = ["etag", "partitionkey", "rowkey", "timestamp"];
   const columns = Object.keys(rows[0]).filter(
     col => !excluded.includes(col.toLowerCase())
   );
