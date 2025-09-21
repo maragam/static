@@ -3,10 +3,11 @@ import React, { useEffect, useState } from "react";
 function TableView() {
   const [rows, setRows] = useState([]);
   const [token, setToken] = useState(null);
+  const FUNCTION_URL = "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
   // Load data from your Azure Function
   const loadData = async (nextToken = null) => {
-    const url = new URL("/api/list", window.location.origin);
+    const url = new URL(FUNCTION_URL);
     url.searchParams.set("pageSize", 20);
     if (nextToken) url.searchParams.set("token", nextToken);
 
