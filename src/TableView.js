@@ -1,64 +1,67 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import "./TableView.css";
 
 function TableView() {
-  const [rows, setRows] = useState([]);
-  const [tokenMap, setTokenMap] = useState({ 1: null }); // page -> continuationToken
+  const [allRows, setAllRows] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const pageSize = 100; // show 100 per page
 
   const FUNCTION_URL =
     "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
 
-  // Wrap loadPage in useCallback so it's stable
-  const loadPage = useCallback(
-    async (page) => {
-      const url = new URL(FUNCTION_URL);
-      url.searchParams.set("pageSize", 100);
+  // Load ALL data by following continuation tokens
+  const loadAllData = async () => {
+    setLoading(true);
+    let items = [];
+    let token = null;
 
-      if (page > 1 && tokenMap[page]) {
-        url.searchParams.set("token", tokenMap[page]);
-      }
+    do {
+      const url = new URL(FUNCTION_URL);
+      url.searchParams.set("pageSize", 1000); // fetch in big chunks
+      if (token) url.searchParams.set("token", token);
 
       const res = await fetch(url);
+      if (!res.ok) {
+        console.error("API error", res.status, await res.text());
+        break;
+      }
       const data = await res.json();
+      items = [...items, ...data.items];
+      token = data.continuationToken;
+    } while (token);
 
-      setRows(data.items);
-
-      setTokenMap((prev) => ({
-        ...prev,
-        [page + 1]: data.continuationToken || null,
-      }));
-
-      setCurrentPage(page);
-    },
-    [FUNCTION_URL, tokenMap] // dependencies
-  );
+    setAllRows(items);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    loadPage(1);
-  }, [loadPage]);
+    loadAllData();
+  }, []);
+
+  // Pagination logic
+  const totalPages = Math.ceil(allRows.length / pageSize);
+  const pagedRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return allRows.slice(start, start + pageSize);
+  }, [allRows, currentPage]);
 
   return (
     <div className="table-container">
       <h2>Azure Storage Table Viewer</h2>
-      <DynamicTable rows={rows} />
-      <div className="pagination">
-        <button
-          className="nav-btn"
-          onClick={() => loadPage(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          ◀ Previous
-        </button>
-        <span className="page-info">Page {currentPage}</span>
-        <button
-          className="nav-btn"
-          onClick={() => loadPage(currentPage + 1)}
-          disabled={!tokenMap[currentPage + 1]}
-        >
-          Next ▶
-        </button>
-      </div>
+      {loading ? (
+        <p>Loading all data...</p>
+      ) : (
+        <>
+          <DynamicTable rows={pagedRows} />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -132,6 +135,25 @@ function DynamicTable({ rows }) {
       </tbody>
     </table>
   );
+}
+
+function Pagination({ currentPage, totalPages, onPageChange }) {
+  if (totalPages <= 1) return null;
+
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pages.push(
+      <button
+        key={i}
+        className={`page-btn ${currentPage === i ? "active" : ""}`}
+        onClick={() => onPageChange(i)}
+      >
+        {i}
+      </button>
+    );
+  }
+
+  return <div className="pagination">{pages}</div>;
 }
 
 export default TableView;
