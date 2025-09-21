@@ -9,7 +9,7 @@ h2 {
   margin-bottom: 0.75rem;
   color: #1e3a8a;
   font-weight: 600;
-  font-size: 1.1rem; /* slightly smaller heading */
+  font-size: 1.1rem;
 }
 
 .modern-table {
@@ -28,9 +28,12 @@ h2 {
 
 .modern-table th,
 .modern-table td {
-  padding: 6px 10px; /* tighter padding */
+  padding: 6px 10px;       /* tighter padding */
   text-align: left;
-  line-height: 1.2; /* more compact line height */
+  line-height: 1.2;
+  white-space: pre;        /* ✅ preserve newlines, no auto wrapping */
+  overflow: hidden;        /* prevent layout break */
+  text-overflow: ellipsis; /* show "…" if clipped */
 }
 
 .modern-table tbody tr:nth-child(even) {
@@ -44,7 +47,7 @@ h2 {
 
 .load-btn {
   margin-top: 0.75rem;
-  padding: 6px 12px; /* smaller button */
+  padding: 6px 12px;
   background: #2563eb;
   color: white;
   border: none;
@@ -78,7 +81,7 @@ h2 {
 }
 
 .page-btn {
-  padding: 4px 8px; /* smaller buttons */
+  padding: 4px 8px;
   border: 1px solid #2563eb;
   background: white;
   color: #2563eb;
