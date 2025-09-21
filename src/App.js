@@ -11,7 +11,7 @@ function App() {
     if (accounts.length > 0) {
       instance
         .acquireTokenSilent({
-          scopes: ["api://<backend-client-id>/user_impersonation"],
+          scopes: ["api://db7fefa9-2bf3-4a95-b5a6-769d00f18f99/user_impersonation"],
           account: accounts[0],
         })
         .then((res) => setToken(res.accessToken))
