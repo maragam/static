@@ -27,7 +27,11 @@ function TableView() {
         url.searchParams.set("pageSize", 1000);
         if (token) url.searchParams.set("token", token);
 
-        const res = await fetch(url);
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`, // pass token
+          },
+        });
         if (!res.ok) {
           console.error("API error", res.status, await res.text());
           break;
