@@ -3,7 +3,7 @@ import "./TableView.css";
 
 const EXCLUDED_COLUMNS = new Set(["etag", "partitionkey", "rowkey", "timestamp"]);
 
-function TableView() {
+function TableView({ token }) {   // ✅ accept Entra ID access token as prop
   const [allRows, setAllRows] = useState([]);
   const [columns, setColumns] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,33 +13,35 @@ function TableView() {
   const pageSize = 100;
 
   const FUNCTION_URL =
-    "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list?code=FlBwKjGXoD5CRJEUOkeQ1IsljSVQkgMCH6y10gzNtqhSAzFuwk8dtA==";
+    "https://backendgui-f0befpdtf3aqb3he.westeurope-01.azurewebsites.net/api/list";
 
   // Load ALL data once
   const loadAllData = async () => {
     setLoading(true);
     let items = [];
-    let token = null;
+    let continuationToken = null;   // ✅ renamed to avoid confusion
 
     try {
       do {
         const url = new URL(FUNCTION_URL);
         url.searchParams.set("pageSize", 1000);
-        if (token) url.searchParams.set("token", token);
+        if (continuationToken) url.searchParams.set("token", continuationToken);
 
         const res = await fetch(url, {
           headers: {
-            Authorization: `Bearer ${token}`, // pass token
+            Authorization: `Bearer ${token}`,   // ✅ use Entra ID token
           },
         });
+
         if (!res.ok) {
           console.error("API error", res.status, await res.text());
           break;
         }
+
         const data = await res.json();
         items = [...items, ...data.items];
-        token = data.continuationToken;
-      } while (token);
+        continuationToken = data.continuationToken;
+      } while (continuationToken);
 
       setAllRows(items);
 
@@ -61,8 +63,10 @@ function TableView() {
   };
 
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (token) {
+      loadAllData();
+    }
+  }, [token]);   // ✅ reload when token changes
 
   // Filter rows across all columns
   const filteredRows = useMemo(() => {
